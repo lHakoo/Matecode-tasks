@@ -9,6 +9,9 @@ const baseTask: Task = {
   title: 'Tarea 1',
   description: 'Desc 1',
   completed: false,
+  priority: 'medium',
+  dueDate: null,
+  order: 0,
   createdAt: Date.now(),
   updatedAt: Date.now(),
 };
@@ -54,5 +57,19 @@ describe('TaskList', () => {
       />,
     );
     expect(screen.getAllByTestId('task-item')).toHaveLength(2);
+  });
+
+  it('muestra el badge de prioridad de cada tarea', () => {
+    render(
+      <TaskList
+        tasks={[{ ...baseTask, priority: 'high' }]}
+        loading={false}
+        error={null}
+        onToggle={vi.fn()}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Alta')).toBeInTheDocument();
   });
 });

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
-import { isValidTaskTitle } from '@/utils/validation';
-import type { TaskDraft } from '@/types/task';
+import { isValidTaskTitle, dateInputToTimestamp, timestampToDateInput } from '@/utils/validation';
+import type { TaskDraft, TaskPriority } from '@/types/task';
+import { PRIORITY_LABEL } from '@/types/task';
 
 interface TaskFormProps {
   onSubmit: (draft: TaskDraft) => Promise<void> | void;
@@ -8,6 +9,8 @@ interface TaskFormProps {
   submitLabel?: string;
   onCancel?: () => void;
 }
+
+const PRIORITIES: TaskPriority[] = ['high', 'medium', 'low'];
 
 export function TaskForm({
   onSubmit,
@@ -17,6 +20,8 @@ export function TaskForm({
 }: TaskFormProps) {
   const [title, setTitle] = useState(initialValues?.title ?? '');
   const [description, setDescription] = useState(initialValues?.description ?? '');
+  const [priority, setPriority] = useState<TaskPriority>(initialValues?.priority ?? 'medium');
+  const [dueDate, setDueDate] = useState(timestampToDateInput(initialValues?.dueDate ?? null));
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -29,10 +34,17 @@ export function TaskForm({
     setError(null);
     setSubmitting(true);
     try {
-      await onSubmit({ title, description });
+      await onSubmit({
+        title,
+        description,
+        priority,
+        dueDate: dateInputToTimestamp(dueDate),
+      });
       if (!initialValues) {
         setTitle('');
         setDescription('');
+        setPriority('medium');
+        setDueDate('');
       }
     } finally {
       setSubmitting(false);
@@ -66,6 +78,37 @@ export function TaskForm({
           className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
           placeholder="Detalles opcionales"
         />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label htmlFor="priority" className="block text-sm font-medium text-slate-700">
+            Prioridad
+          </label>
+          <select
+            id="priority"
+            value={priority}
+            onChange={(e) => setPriority(e.target.value as TaskPriority)}
+            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+          >
+            {PRIORITIES.map((p) => (
+              <option key={p} value={p}>
+                {PRIORITY_LABEL[p]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="dueDate" className="block text-sm font-medium text-slate-700">
+            Fecha de vencimiento
+          </label>
+          <input
+            id="dueDate"
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+          />
+        </div>
       </div>
       {error && (
         <p role="alert" className="text-sm text-red-600">

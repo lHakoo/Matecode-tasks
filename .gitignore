@@ -8,5 +8,3 @@ dist-ssr
 *.log
 .DS_Store
 coverage
-*.tsbuildinfo
-vite.config.d.ts

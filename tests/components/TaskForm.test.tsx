@@ -14,7 +14,7 @@ describe('TaskForm', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(/título es obligatorio/i);
   });
 
-  it('llama a onSubmit con los datos del formulario y limpia los campos', async () => {
+  it('llama a onSubmit con los datos del formulario, prioridad media por defecto', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     render(<TaskForm onSubmit={onSubmit} />);
 
@@ -25,14 +25,35 @@ describe('TaskForm', () => {
     expect(onSubmit).toHaveBeenCalledWith({
       title: 'Comprar insumos',
       description: 'Para la oficina',
+      priority: 'medium',
+      dueDate: null,
     });
+  });
+
+  it('permite elegir prioridad y fecha de vencimiento', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(<TaskForm onSubmit={onSubmit} />);
+
+    await userEvent.type(screen.getByLabelText(/título/i), 'Tarea urgente');
+    await userEvent.selectOptions(screen.getByLabelText(/prioridad/i), 'high');
+    await userEvent.type(screen.getByLabelText(/fecha de vencimiento/i), '2026-08-15');
+    await userEvent.click(screen.getByRole('button', { name: /agregar tarea/i }));
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Tarea urgente',
+        priority: 'high',
+      }),
+    );
+    const call = onSubmit.mock.calls[0][0];
+    expect(new Date(call.dueDate).getDate()).toBe(15);
   });
 
   it('precarga los valores iniciales cuando se edita', () => {
     render(
       <TaskForm
         onSubmit={vi.fn()}
-        initialValues={{ title: 'Tarea existente', description: 'Desc' }}
+        initialValues={{ title: 'Tarea existente', description: 'Desc', priority: 'low', dueDate: null }}
         submitLabel="Guardar cambios"
       />,
     );

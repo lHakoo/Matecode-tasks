@@ -102,7 +102,7 @@ Ver `.env.example`. Resumen:
 
 ## URL de producción
 
-_Pendiente: completar con la URL de Vercel una vez desplegado (`vercel --prod`)._
+https://matecode-tasks-phi.vercel.app
 
 ## Flujo de envío de emails
 
@@ -115,8 +115,10 @@ _Pendiente: completar con la URL de Vercel una vez desplegado (`vercel --prod`).
 
 _(Sección a completar por el desarrollador con su experiencia real. Sugerencia de estructura: en qué partes fue más útil —por ejemplo scaffolding de capas, escritura de tests, o traducción de errores de Firebase a mensajes de usuario—, en qué partes hubo que corregirla a mano, y qué patrones de prompting o de revisión de código generado por IA resultaron más efectivos.)_
 
-## Extra credit (no implementado en esta base)
+## Extra credit
 
-- Filtro de tareas: **ya incluido** (`TaskFilters`: todas / pendientes / completadas).
-- Drag & drop para reordenar (ej. `dnd-kit`): no implementado.
-- Fechas de vencimiento y orden por prioridad: no implementado (el modelo `Task` tendría que sumar `dueDate` y `priority`).
+- **Filtro de tareas** (`TaskFilters`): todas / pendientes / completadas.
+- **Drag & drop para reordenar** (`dnd-kit`): cada tarea tiene un campo `order` en Firestore; al soltar una tarjeta se recalculan los índices y se persisten en un solo `writeBatch`. Solo está habilitado cuando el filtro es "Todas" y el orden es "Orden manual" (si no, arrastrar no tendría sentido visual).
+- **Fechas de vencimiento y prioridad**: el formulario permite asignar prioridad (alta/media/baja) y una fecha opcional de vencimiento. Un selector de orden permite ver las tareas por prioridad o por fecha de vencimiento en vez del orden manual; las tareas vencidas y no completadas se resaltan en rojo.
+
+> Nota: como ahora la consulta principal ordena por `order` en vez de `createdAt`, si ya tenías el índice compuesto viejo (`userId` + `createdAt`) vas a necesitar uno nuevo para `userId` + `order`. Firestore te va a mostrar el link para crearlo automáticamente la primera vez que cargue la página con este código (mismo mecanismo que la primera vez).

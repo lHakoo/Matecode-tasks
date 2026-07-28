@@ -1,3 +1,18 @@
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  arrayMove,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
 import type { Task, TaskDraft } from '@/types/task';
 import { TaskItem } from './TaskItem';
 
@@ -8,9 +23,26 @@ interface TaskListProps {
   onToggle: (id: string, completed: boolean) => void;
   onDelete: (id: string) => void;
   onEdit: (id: string, changes: TaskDraft) => Promise<void> | void;
+  onReorder?: (orderedIds: string[]) => void;
+  /** El drag & drop manual solo tiene sentido si la lista está sin filtrar/ordenada por otro criterio. */
+  dragEnabled?: boolean;
 }
 
-export function TaskList({ tasks, loading, error, onToggle, onDelete, onEdit }: TaskListProps) {
+export function TaskList({
+  tasks,
+  loading,
+  error,
+  onToggle,
+  onDelete,
+  onEdit,
+  onReorder,
+  dragEnabled = false,
+}: TaskListProps) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
   if (loading) {
     return <p className="text-sm text-slate-500">Cargando tareas...</p>;
   }
@@ -27,11 +59,40 @@ export function TaskList({ tasks, loading, error, onToggle, onDelete, onEdit }: 
     return <p className="text-sm text-slate-500">No tenés tareas todavía. ¡Agregá la primera!</p>;
   }
 
-  return (
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !onReorder) return;
+
+    const oldIndex = tasks.findIndex((t) => t.id === active.id);
+    const newIndex = tasks.findIndex((t) => t.id === over.id);
+    const reordered = arrayMove(tasks, oldIndex, newIndex);
+    onReorder(reordered.map((t) => t.id));
+  }
+
+  const list = (
     <ul className="flex flex-col gap-3" data-testid="task-list">
       {tasks.map((task) => (
-        <TaskItem key={task.id} task={task} onToggle={onToggle} onDelete={onDelete} onEdit={onEdit} />
+        <TaskItem
+          key={task.id}
+          task={task}
+          onToggle={onToggle}
+          onDelete={onDelete}
+          onEdit={onEdit}
+          dragDisabled={!dragEnabled}
+        />
       ))}
     </ul>
+  );
+
+  if (!dragEnabled) {
+    return list;
+  }
+
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+        {list}
+      </SortableContext>
+    </DndContext>
   );
 }
